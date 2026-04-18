@@ -57,35 +57,30 @@ That keeps the command global while still pointing at the real repo checkout, so
 
 1. Run `uv sync`.
 2. Open Chrome to `chrome://inspect/#remote-debugging`.
-   On macOS: `uv run bh-open-debugging`
+   On macOS: `open -a "Google Chrome" "chrome://inspect/#remote-debugging"`
    On Linux: open Chrome manually, then open that URL.
 3. Tell the user to tick the remote-debugging checkbox and click Chrome's "Allow" button if it appears.
 4. If setup hangs on the first connect, stop and wait for the user to click `Allow`, then retry once.
 5. Verify with:
 
 ```bash
-uv run bh-check
-```
-
-After editable install, the same check works from anywhere:
-
-```bash
-bh-check
-```
-
-Run browser code with:
-
-```bash
 uv run bh <<'PY'
 ensure_real_tab()
+if not current_tab()["url"] or current_tab()["url"].startswith(INTERNAL):
+    new_tab("about:blank")
 print(page_info())
 PY
 ```
 
 If that fails with a stale websocket or stale socket, restart the daemon once and retry:
 
+Run this from the repo root:
+
 ```bash
-uv run bh-kill
+uv run python - <<'PY'
+from helpers import kill_daemon
+kill_daemon()
+PY
 ```
 
 ### Remote browsers
@@ -94,18 +89,14 @@ Remote is optional. Use it for parallel agents, sub-agents, or deployment.
 
 If `BROWSER_USE_API_KEY` is already present in `.env` or the environment, start a remote daemon with:
 
+Run this from the repo root:
+
 ```bash
-uv run bh-remote work
-BU_NAME=work uv run bh <<'PY'
-print(page_info())
+uv run python - <<'PY'
+from helpers import start_remote_daemon
+print(start_remote_daemon("work"))
 PY
-```
-
-After editable install, the same remote flow works from anywhere:
-
-```bash
-bh-remote work
-BU_NAME=work bh <<'PY'
+BU_NAME=work uv run bh <<'PY'
 print(page_info())
 PY
 ```
